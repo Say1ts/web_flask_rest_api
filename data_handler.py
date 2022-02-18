@@ -36,7 +36,9 @@ def show_info_by_geonameid(geonameid, df):
     info = df[df.geonameid == geonameid] \
         .to_dict(orient="records")
     status = 404 if info == [] else 200
+    description = 'City is not found' if info == [] else 'OK'
     res = dict(status=status,
+               description=description,
                info=info)
     return res
 
@@ -50,8 +52,10 @@ def show_info_page(page, number, df):
     sample = df.iloc[start:stop].to_dict(orient="records")
 
     status = 404 if sample == [] else 200
+    description= 'Out of range' if sample == [] else 'OK'
     res = dict(
         status=status,
+        description=description,
         pages=sample)
 
     return res
@@ -72,9 +76,11 @@ def find_delta_time(timezone1, timezone2, df_timezones):
 def find_north_ans(first_town, second_town, name_1, name_2):
     if first_town.iloc[4] > second_town.iloc[4]:
         text = f'Город {name_1} находится севернее, чем город {name_2}. <br>'
+        north = name_1
     else:
         text = f'Город {name_2} находится севернее, чем город {name_1}. <br>'
-    return text
+        north = name_2
+    return text, north
 
 
 def find_delta_time_text(first_town, second_town):
@@ -109,10 +115,12 @@ def return_result_according_status(status_1, city_1, description_1,
             .join(city_2).T \
             .to_dict(orient="records")
 
+        text_description_north, north = find_north_ans(city_1, city_2, name_1, name_2)
         res = dict(
             status=200,
             description='OK',
-            north=find_north_ans(city_1, city_2, name_1, name_2),
+            north=north,
+            text_description_north=text_description_north,
             delta_time=find_delta_time_text(city_1, city_2),
             info_about_cities=info_united
         )
@@ -137,6 +145,7 @@ def show_info_for_two_towns(name_1, name_2, df):
 
 
 def show_guessed_town_name(name, df):
+    """Return dictionary with list of guessed names by received part"""
     match_names_df = find_town_by_name(name, df)[0:10]
     match_names_df = match_names_df['alternatenames'].str.split(pat=" |,|\n")
     correct_list_of_names = []
@@ -149,10 +158,13 @@ def show_guessed_town_name(name, df):
 
 
 def show_not_found():
-    return dict(status=404)
+    """Return dictionary with status 404 if there are no such page"""
+    return dict(status=404,
+                description='The page is not found')
 
 
 def test_with_random_results():
+    """Function for testing program with some cases."""
     x = load_data()
     number = rd.randint(0, 363823)
 
