@@ -77,7 +77,7 @@ def find_north_ans(first_town, second_town, name_1, name_2):
     return text
 
 
-def find_delta_time_ans(first_town, second_town):
+def find_delta_time_text(first_town, second_town):
     timezone1 = first_town.iloc[16]
     timezone2 = second_town.iloc[16]
     delta = find_delta_time(timezone1, timezone2, load_timezones())
@@ -88,47 +88,52 @@ def find_delta_time_ans(first_town, second_town):
     return text
 
 
-def try_find_town_by_name():
-    pass
+def try_to_find_town_by_name(name, df):
+    try:
+        city = find_town_by_name(name, df).iloc[0]
+    except Exception:
+        status = 404
+        city = []
+        description = f'{name} is not found'
+        return status, city, description
+    else:
+        status = 200
+        description = 'Ok'
+        return status, city, description
 
+
+def return_result_according_status(status_1, city_1, description_1,
+                                   status_2, city_2, description_2, name_1, name_2):
+    if status_1 == status_2 == 200:
+        info_united = city_1.to_frame() \
+            .join(city_2).T \
+            .to_dict(orient="records")
+
+        res = dict(
+            status=200,
+            description='OK',
+            north=find_north_ans(city_1, city_2, name_1, name_2),
+            delta_time=find_delta_time_text(city_1, city_2),
+            info_about_cities=info_united
+        )
+    elif status_1 == 404:
+        res = dict(status=status_1,
+                   description=description_1)
+    else:
+        res = dict(status=status_2,
+                   description=description_2)
+    return res
 
 
 def show_info_for_two_towns(name_1, name_2, df):
     """Return dictionary with information about 2 cities
     and show which north, how much time difference.
     """
-    global first_town, second_town, description
-    status = 200
-
-    try:
-        first_town = find_town_by_name(name_1, df).iloc[0]
-    except Exception:
-        status = 404
-        description = f'{name_1} is not found'
-    else:
-        pass
-
-    try:
-        second_town = find_town_by_name(name_2, df).iloc[0]
-    except Exception:
-        status = 404
-        description = f'{name_2} is not found'
-
-    if status == 200:
-        info_united = first_town.to_frame() \
-            .join(second_town).T \
-            .to_dict(orient="records")
-
-        res = dict(
-            status=200,
-            north=find_north_ans(first_town, second_town, name_1, name_2),
-            delta_time=find_delta_time_ans(first_town, second_town),
-            info_about_cities=info_united
-        )
-    else:
-        res = dict(status=404,
-                   description=description)
-    return res
+    status_1, city_1, description_1 = try_to_find_town_by_name(name_1, df)
+    status_2, city_2, description_2 = try_to_find_town_by_name(name_2, df)
+    return return_result_according_status(
+        status_1, city_1, description_1,
+        status_2, city_2, description_2, name_1, name_2)
 
 
 def show_guessed_town_name(name, df):
