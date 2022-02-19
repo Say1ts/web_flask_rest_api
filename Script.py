@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 import data_handler
 
 app = Flask(__name__)
@@ -12,7 +12,7 @@ data = data_handler.load_data()
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    return render_template('readme.html')
 
 
 @app.route('/geonameid/<int:geonameid>', methods=['GET'])
